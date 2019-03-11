@@ -17,8 +17,9 @@ def ask():
     args['n_neurons'] = int(input("Number of hidden neurons: "))
     isnoise = input("Want noise? Return for yes")
     args['noise'] = True if isnoise == '' else False
+    if(not (args['noise']) ):
+        args['noise_val'] = 0.0
     return args
-
 
 # Hyperparameters
 EPOCHS = 500
@@ -45,11 +46,13 @@ def weights_init(model):
             m.weight.data.normal_(0, 1)
 
 # Adding noise
-def addnoise(data):
+def addnoise(data, args):
     data = np.asarray(data)
-    noise = np.random.normal(0, 0.25, data.shape)
+    noise_val = 0.25
+    noise = np.random.normal(0, noise_val, data.shape)
+    args['noise_val'] = noise_val
     newdata = data + noise
-    return newdata
+    return newdata, args
 
 # Root mean squared error
 def RMSELoss(yhat,y):
@@ -81,7 +84,7 @@ if __name__ == "__main__":
     # add noise
     if(args['noise']):
         print("using noise")
-        data = addnoise(data)
+        data,args = addnoise(data,args)
 
     # Generate labels
     labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
@@ -110,7 +113,7 @@ if __name__ == "__main__":
 
     print("\nFinal results:")
     plt.plot(np.array(hold_loss))
-    plt.savefig("./train_loss/train_loss_at"+str(datetime.datetime.now())+".png")
+    plt.savefig("./train_loss/train_loss_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+").png")
     plt.close()
     # Plotting decision boundary
 
@@ -149,5 +152,5 @@ if __name__ == "__main__":
     plt.figure(figsize=(12,8))
     plt.contourf(XX, YY, Z, cmap=plt.cm.Accent, alpha=0.5)
     plt.scatter(test_data[:,0], test_data[:,1], c=Y_test, cmap=plt.cm.Accent)
-    plt.savefig("./boundaries/decision_boundary_at"+str(datetime.datetime.now())+".png")
+    plt.savefig("./boundaries/decision_boundary_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+").png")
     plt.close()
