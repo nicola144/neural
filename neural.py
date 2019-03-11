@@ -55,6 +55,15 @@ def addnoise(data):
 def RMSELoss(yhat,y):
     return torch.sqrt(torch.mean((yhat-y)**2))
 
+# Plotting dataset
+def plot_data(data,labels):
+    data = np.asarray(data)
+    labels = np.asarray(labels)
+    labels = labels.flatten()
+
+    plt.figure(figsize=(12,8))
+    plt.scatter(data[:,0], data[:,1], c=labels)
+    plt.show()
 
 if __name__=="__main__":
 
@@ -77,6 +86,8 @@ if __name__=="__main__":
     # Generate labels
     labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
 
+    plot_data(data,labels)
+    sys.exit()
     inputs = list(map(lambda s: Variable(torch.Tensor([s])), data))
     targets = list(map(lambda s: Variable(torch.Tensor([s])), labels))
 
@@ -102,23 +113,23 @@ if __name__=="__main__":
     plt.show()
 
     # Other stuff
-    X = torch.Tensor([[0,0],[0,1], [1,0], [1,1]])
-
-    model_params = list(net.parameters())
-
-    model_weights = model_params[0].data.numpy()
-    model_bias = model_params[1].data.numpy()
-
-    plt.scatter(X.numpy()[[0,-1], 0], X.numpy()[[0, -1], 1], s=50)
-    plt.scatter(X.numpy()[[1,2], 0], X.numpy()[[1, 2], 1], c='red', s=50)
-
-    x_1 = np.arange(-0.1, 1.1, 0.1)
-    y_1 = ((x_1 * model_weights[0,0]) + model_bias[0]) / (-model_weights[0,1])
-    plt.plot(x_1, y_1)
-
-    x_2 = np.arange(-0.1, 1.1, 0.1)
-    y_2 = ((x_2 * model_weights[1,0]) + model_bias[1]) / (-model_weights[1,1])
-    plt.plot(x_2, y_2)
-
-    plt.legend(["neuron_1", "neuron_2"], loc=8)
-    plt.show()
+    # X = torch.Tensor([[0,0],[0,1], [1,0], [1,1]])
+    #
+    # model_params = list(net.parameters())
+    #
+    # model_weights = model_params[0].data.numpy()
+    # model_bias = model_params[1].data.numpy()
+    #
+    # plt.scatter(X.numpy()[[0,-1], 0], X.numpy()[[0, -1], 1], s=50)
+    # plt.scatter(X.numpy()[[1,2], 0], X.numpy()[[1, 2], 1], c='red', s=50)
+    #
+    # x_1 = np.arange(-0.1, 1.1, 0.1)
+    # y_1 = ((x_1 * model_weights[0,0]) + model_bias[0]) / (-model_weights[0,1])
+    # plt.plot(x_1, y_1)
+    #
+    # x_2 = np.arange(-0.1, 1.1, 0.1)
+    # y_2 = ((x_2 * model_weights[1,0]) + model_bias[1]) / (-model_weights[1,1])
+    # plt.plot(x_2, y_2)
+    #
+    # plt.legend(["neuron_1", "neuron_2"], loc=8)
+    # plt.show()
