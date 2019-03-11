@@ -6,7 +6,6 @@ import torch.optim as optim
 import matplotlib.pyplot as plt
 import numpy as np
 import sys
-import seaborn as sns
 import datetime
 
 # Arguments
@@ -24,6 +23,33 @@ def ask():
 # Hyperparameters
 EPOCHS = 500
 learning_rate = 1e-4
+
+def generate_data(args):
+
+    # Number of inputs (for each type)
+    n = args['n_inputs']
+
+    # Generate data
+    data = [[0,0]] * n + [[0,1]] * n + [[1,0]] * n + [[1,1]] * n
+
+    # add noise
+    if(args['noise']):
+        print("using noise")
+        data,args = addnoise(data,args)
+
+    # Generate labels
+    labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
+
+    # Ask if they want to plot dataset
+    wanna_plot = input("wanna plot data? Return for yes")
+    wanna_plot = True if wanna_plot == '' else False
+    if(wanna_plot):
+        plot_data(data,labels)
+
+    inputs = list(map(lambda s: Variable(torch.Tensor([s])), data))
+    targets = list(map(lambda s: Variable(torch.Tensor([s])), labels))
+
+    return inputs,targets,data,labels
 
 # Model
 class NN(nn.Module):
@@ -51,6 +77,7 @@ def addnoise(data, args):
     noise_val = 0.25
     noise = np.random.normal(0, noise_val, data.shape)
     args['noise_val'] = noise_val
+    print("using noise: ", noise_val)
     newdata = data + noise
     return newdata, args
 
@@ -75,24 +102,7 @@ if __name__ == "__main__":
 
     net = NN(hidden_neurons=args['n_neurons'])
 
-    # Number of inputs (for each type)
-    n = args['n_inputs']
-
-    # Generate data
-    data = [[0,0]] * n + [[0,1]] * n + [[1,0]] * n + [[1,1]] * n
-
-    # add noise
-    if(args['noise']):
-        print("using noise")
-        data,args = addnoise(data,args)
-
-    # Generate labels
-    labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
-
-    plot_data(data,labels)
-
-    inputs = list(map(lambda s: Variable(torch.Tensor([s])), data))
-    targets = list(map(lambda s: Variable(torch.Tensor([s])), labels))
+    inputs,targets,data,labels = generate_data(args)
 
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr=learning_rate)
@@ -115,6 +125,8 @@ if __name__ == "__main__":
     plt.plot(np.array(hold_loss))
     plt.savefig("./train_loss/train_loss_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+").png")
     plt.close()
+
+
     # Plotting decision boundary
 
     # For now testing with training set
