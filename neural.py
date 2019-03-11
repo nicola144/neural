@@ -87,7 +87,7 @@ if __name__=="__main__":
     labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
 
     plot_data(data,labels)
-    sys.exit()
+
     inputs = list(map(lambda s: Variable(torch.Tensor([s])), data))
     targets = list(map(lambda s: Variable(torch.Tensor([s])), labels))
 
@@ -110,6 +110,48 @@ if __name__=="__main__":
 
     print("\nFinal results:")
     plt.plot(np.array(hold_loss))
+    plt.show()
+
+    # Plotting decision boundary
+
+    # For now testing with training set
+    
+    test_data = torch.FloatTensor(data)
+    labels = np.asarray(labels)
+    Y_test = labels.flatten()
+    y_hat_test = net(test_data)
+    y_hat_test_class = np.where(y_hat_test.detach().numpy()<0.5, 0, 1)
+    test_accuracy = np.sum(Y_test.reshape(-1,1)==y_hat_test_class) / len(Y_test)
+    print("Test Accuracy {:.2f}".format(test_accuracy))
+
+    # Plot the decision boundary
+    # Determine grid range in x and y directions
+    x_min, x_max = test_data[:, 0].min()-0.1, test_data[:, 0].max()+0.1
+    y_min, y_max = test_data[:, 1].min()-0.1, test_data[:, 1].max()+0.1
+
+    # Set grid spacing parameter
+    spacing = min(x_max - x_min, y_max - y_min) / 100
+
+    # Create grid
+    XX, YY = np.meshgrid(np.arange(x_min, x_max, spacing),
+                   np.arange(y_min, y_max, spacing))
+
+    # Concatenate data to match input
+    full_data = np.hstack((XX.ravel().reshape(-1,1),
+                      YY.ravel().reshape(-1,1)))
+
+    # Pass data to predict method
+    data_t = torch.FloatTensor(full_data)
+    db_prob = net(data_t)
+
+    clf = np.where(db_prob<0.5,0,1)
+
+    Z = clf.reshape(XX.shape)
+
+    plt.figure(figsize=(12,8))
+    plt.contourf(XX, YY, Z, cmap=plt.cm.Accent, alpha=0.5)
+    plt.scatter(test_data[:,0], test_data[:,1], c=Y_test,
+                cmap=plt.cm.Accent)
     plt.show()
 
     # Other stuff
