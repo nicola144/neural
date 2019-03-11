@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import seaborn as sns
-
+import datetime
 
 # Arguments
 def ask():
@@ -65,7 +65,7 @@ def plot_data(data,labels):
     plt.scatter(data[:,0], data[:,1], c=labels)
     plt.show()
 
-if __name__=="__main__":
+if __name__ == "__main__":
 
     # Get settings
     args = ask()
@@ -110,8 +110,8 @@ if __name__=="__main__":
 
     print("\nFinal results:")
     plt.plot(np.array(hold_loss))
-    plt.show()
-
+    plt.savefig("./train_loss/train_loss_at"+str(datetime.datetime.now())+".png")
+    plt.close()
     # Plotting decision boundary
 
     # For now testing with training set
@@ -133,12 +133,10 @@ if __name__=="__main__":
     spacing = min(x_max - x_min, y_max - y_min) / 100
 
     # Create grid
-    XX, YY = np.meshgrid(np.arange(x_min, x_max, spacing),
-                   np.arange(y_min, y_max, spacing))
+    XX, YY = np.meshgrid(np.arange(x_min, x_max, spacing), np.arange(y_min, y_max, spacing))
 
     # Concatenate data to match input
-    full_data = np.hstack((XX.ravel().reshape(-1,1),
-                      YY.ravel().reshape(-1,1)))
+    full_data = np.hstack((XX.ravel().reshape(-1,1), YY.ravel().reshape(-1,1)))
 
     # Pass data to predict method
     data_t = torch.FloatTensor(full_data)
@@ -150,6 +148,6 @@ if __name__=="__main__":
 
     plt.figure(figsize=(12,8))
     plt.contourf(XX, YY, Z, cmap=plt.cm.Accent, alpha=0.5)
-    plt.scatter(test_data[:,0], test_data[:,1], c=Y_test,
-                cmap=plt.cm.Accent)
-    plt.show()
+    plt.scatter(test_data[:,0], test_data[:,1], c=Y_test, cmap=plt.cm.Accent)
+    plt.savefig("./boundaries/decision_boundary_at"+str(datetime.datetime.now())+".png")
+    plt.close()
