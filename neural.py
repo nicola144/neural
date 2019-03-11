@@ -115,7 +115,7 @@ if __name__=="__main__":
     # Plotting decision boundary
 
     # For now testing with training set
-    
+
     test_data = torch.FloatTensor(data)
     labels = np.asarray(labels)
     Y_test = labels.flatten()
@@ -153,25 +153,3 @@ if __name__=="__main__":
     plt.scatter(test_data[:,0], test_data[:,1], c=Y_test,
                 cmap=plt.cm.Accent)
     plt.show()
-
-    # Other stuff
-    # X = torch.Tensor([[0,0],[0,1], [1,0], [1,1]])
-    #
-    # model_params = list(net.parameters())
-    #
-    # model_weights = model_params[0].data.numpy()
-    # model_bias = model_params[1].data.numpy()
-    #
-    # plt.scatter(X.numpy()[[0,-1], 0], X.numpy()[[0, -1], 1], s=50)
-    # plt.scatter(X.numpy()[[1,2], 0], X.numpy()[[1, 2], 1], c='red', s=50)
-    #
-    # x_1 = np.arange(-0.1, 1.1, 0.1)
-    # y_1 = ((x_1 * model_weights[0,0]) + model_bias[0]) / (-model_weights[0,1])
-    # plt.plot(x_1, y_1)
-    #
-    # x_2 = np.arange(-0.1, 1.1, 0.1)
-    # y_2 = ((x_2 * model_weights[1,0]) + model_bias[1]) / (-model_weights[1,1])
-    # plt.plot(x_2, y_2)
-    #
-    # plt.legend(["neuron_1", "neuron_2"], loc=8)
-    # plt.show()
