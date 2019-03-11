@@ -23,7 +23,7 @@ def ask():
 
 # Hyperparameters
 EPOCHS = 10000
-learning_rate = 1e-4
+learning_rate = 1e-2
 
 # Generate an XOR dataset. Each input gets a fair representation
 def generate_data(args):
@@ -44,7 +44,7 @@ def generate_data(args):
     labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
 
     # Ask if they want to plot dataset
-    wanna_plot = input("wanna plot data? Return for yes ")
+    wanna_plot = input("Wanna plot data? Return for yes ")
     wanna_plot = True if wanna_plot == '' else False
     if(wanna_plot):
         plot_data(data,labels)
@@ -110,7 +110,6 @@ if __name__ == "__main__":
     inputs,targets,data,labels = generate_data(args)
 
     criterion = nn.MSELoss(reduction="mean")
-    # optimizer = optim.Adam(net.parameters(), lr=learning_rate)
     optimizer = optim.SGD(net.parameters(), lr=learning_rate)
     hold_loss=[]
 
@@ -200,3 +199,4 @@ if __name__ == "__main__":
 
 # 32 inputs (per category) 4 hidd neurons takes 1000 epochs to learn , 500 is not enough
 # Weight initialization : performance from 0.5 to 0.92 (128 inputs, 8 hidd neurons, 1000 epochs, SGD no momentum)
+# SGD learning rate 1e-4 was too low. Works with 1e-2
