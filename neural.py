@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import datetime
-
+import pandas as pd
 from progress.bar import Bar
 
 # Arguments
@@ -22,7 +22,7 @@ def ask():
     return args
 
 # Hyperparameters
-EPOCHS = 10000
+EPOCHS = 5000
 learning_rate = 1e-2
 
 # Generate an XOR dataset. Each input gets a fair representation
@@ -116,9 +116,9 @@ if __name__ == "__main__":
     prog_bar = Bar('Training...', suffix='%(percent).1f%% - %(eta)ds - %(index)d / %(max)d', max=EPOCHS )
 
     # Train loop
+    # running_loss = 0.0
     for epoch in range(0, EPOCHS):
         running_loss = 0.0
-
         # Batch gradient descent
         inputs = np.asarray(data)
         targets = np.asarray(labels)
@@ -194,6 +194,41 @@ if __name__ == "__main__":
     plt.show()
     plt.savefig("./boundaries/decision_boundary_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
     plt.close()
+
+    unitSquareMap = {"x":[],"y":[]}
+    lo = 0#Lower bound of the axes
+    hi = 1#Upper bound of the axes
+    ssf = 20#Increase this for higher resolution map. E.g 5 means 5x5 output map
+    for i in range(0,ssf+1):#Creates dictionary of grid of float coordinates.
+        for j in range(0,ssf+1):
+            unitSquareMap["x"].append((float(hi-lo)/ssf)*i+lo)
+            unitSquareMap["y"].append((float(hi-lo)/ssf)*j+lo)
+
+    unitSquareMap = pd.DataFrame(data=unitSquareMap)
+    unitSquareMap = unitSquareMap[["x","y"]]
+    unitSquareMap = unitSquareMap.values
+
+    out2 = net(torch.FloatTensor(unitSquareMap))
+
+    inp = unitSquareMap
+    inp = inp[:,:2]
+    outImg = np.empty((ssf+1,ssf+1))#Empty square array
+
+    for i in range(0,(ssf+1)**2):
+        row = inp[i]
+        outImg[int(row[0]*ssf),int(row[1]*ssf)] = out2[i]
+
+    outImg = outImg.T
+    # print(np.flip(outImg,axis=0))#This is prints in the same layout as the graph
+
+    img = plt.imshow(outImg,cmap="Greys",interpolation='none',extent = [lo,hi,hi,lo])
+    plt.xlabel("inp1")
+    plt.ylabel("inp2")
+    plt.gca().invert_yaxis()#Flip vertically, as the plot plots from the top by default
+    plt.show()
+    plt.savefig("./heatmaps/heatmaps_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
+    plt.close()
+
 
 # Notes
 
