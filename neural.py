@@ -13,7 +13,7 @@ from progress.bar import Bar
 # Arguments
 def ask():
     args = dict()
-    args['n_inputs'] = int(input("Number of inputs: "))
+    args['n_inputs'] = int(input("Number of inputs(per type): "))
     args['n_neurons'] = int(input("Number of hidden neurons: "))
     isnoise = input("Want noise? Return for yes ")
     args['noise'] = True if isnoise == '' else False
@@ -22,7 +22,7 @@ def ask():
     return args
 
 # Hyperparameters
-EPOCHS = 5000
+EPOCHS = 10000
 learning_rate = 1e-4
 
 # Generate an XOR dataset. Each input gets a fair representation
@@ -84,10 +84,6 @@ def addnoise(data, args):
     newdata = data + noise
     return newdata, args
 
-# Root mean squared error
-def RMSELoss(yhat,y):
-    return torch.sqrt(torch.mean((yhat-y)**2))
-
 # Plotting dataset
 def plot_data(data,labels):
     data = np.asarray(data)
@@ -114,9 +110,8 @@ if __name__ == "__main__":
     inputs,targets,data,labels = generate_data(args)
 
     criterion = nn.MSELoss(reduction="mean")
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
-    # criterion = RMSELoss
-    # optimizer = optim.SGD(net.parameters(), lr=learning_rate)
+    # optimizer = optim.Adam(net.parameters(), lr=learning_rate)
+    optimizer = optim.SGD(net.parameters(), lr=learning_rate)
     hold_loss=[]
 
     prog_bar = Bar('Training...', suffix='%(percent).1f%% - %(eta)ds - %(index)d / %(max)d', max=EPOCHS )
@@ -125,12 +120,11 @@ if __name__ == "__main__":
     for epoch in range(0, EPOCHS):
         running_loss = 0.0
 
+        # Batch gradient descent
         inputs = np.asarray(data)
         targets = np.asarray(labels)
-
         inputs = torch.from_numpy(inputs).float()
         targets = torch.from_numpy(targets).float()
-
         optimizer.zero_grad()   # zero the gradient buffers
         output = net(inputs)
         loss = criterion(output, targets)
@@ -138,7 +132,7 @@ if __name__ == "__main__":
         loss.backward()
         optimizer.step()    # Does the update
 
-        # SGD  ?
+        # Stochastic gradient descent (on each training example)
         # for input, target in zip(inputs, targets):
         #     print(type(input))
         #     print(type(target))
