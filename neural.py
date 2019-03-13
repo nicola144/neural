@@ -12,6 +12,10 @@ from progress.bar import Bar
 
 from network import NeuralNet
 
+# Hyperparameters
+EPOCHS = 5000
+learning_rate = 1e-1
+
 # Arguments
 def ask():
     args = dict()
@@ -23,10 +27,6 @@ def ask():
         args['noise_val'] = 0.0
     return args
 
-# Hyperparameters
-EPOCHS = 2000
-learning_rate = 1e-1
-
 # Generate an XOR dataset. Each input gets a fair representation
 def generate_data(args,istest):
 
@@ -36,14 +36,14 @@ def generate_data(args,istest):
     # Generate data
     data = [[0,0]] * n + [[0,1]] * n + [[1,0]] * n + [[1,1]] * n
 
+    # Generate labels
+    labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
+
     # add noise
     if(args['noise']):
         data,args = addnoise(data,args)
     else:
         print("Not using noise")
-
-    # Generate labels
-    labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
 
     # Ask if they want to plot dataset
     wanna_plot = input("Wanna plot data? Return for yes ")
@@ -56,28 +56,25 @@ def generate_data(args,istest):
 
     return inputs,targets,data,labels
 
-# Weight initialization
-def weights_init_normal(model):
-    for m in model.modules():
-        if isinstance(m, nn.Linear):
-            # initialize the weight tensor, here we use a normal distribution
-            m.weight.data.normal_(0, 1)
-
-def weights_init_uniform(model):
-    for m in model.modules():
-        if isinstance(m, nn.Linear):
-            # initialize the weight tensor, here we use a normal distribution
-            m.weight.data.uniform_(m.weight)
-
 # Adding noise
 def addnoise(data, args):
     data = np.asarray(data)
     noise_val = 0.25
+    # Gaussian noise with 0 mean
     noise = np.random.normal(0, noise_val, data.shape)
     args['noise_val'] = noise_val
     print("Using noise: ", noise_val)
     newdata = data + noise
     return newdata, args
+
+# From numpy to torch tensor
+def to_tensor(inputs,targets):
+    inputs = np.asarray(data)
+    targets = np.asarray(labels)
+    inputs = torch.from_numpy(inputs).float()
+    targets = torch.from_numpy(targets).float()
+
+    return inputs,targets
 
 # Plotting dataset
 def plot_data(data,labels):
@@ -98,9 +95,6 @@ if __name__ == "__main__":
     # Model
     net = NeuralNet(hidden_neurons=args['n_neurons'])
 
-    # Initialize weights
-    net.apply(weights_init_normal)
-
     # Train data
     inputs,targets,data,labels = generate_data(args,istest=False)
 
@@ -112,12 +106,11 @@ if __name__ == "__main__":
 
     # Train loop
     for epoch in range(0, EPOCHS):
+
         running_loss = 0.0
+        inputs,targets = to_tensor(inputs,targets)
+
         # Batch gradient descent
-        inputs = np.asarray(data)
-        targets = np.asarray(labels)
-        inputs = torch.from_numpy(inputs).float()
-        targets = torch.from_numpy(targets).float()
         optimizer.zero_grad()   # zero the gradient buffers
         output = net(inputs)
         loss = criterion(output, targets)
@@ -188,12 +181,16 @@ if __name__ == "__main__":
     plt.close()
 
     # Heatmap
-    #
+    # Adapted from Jacob Taylor 1615260
     unitSquareMap = {"x":[],"y":[]}
-    lo = 0 #Lower bound of the axes
-    hi = 1 #Upper bound of the axes
-    ssf = 25 #Increase this for higher resolution map. E.g 5 means 5x5 output map
-    for i in range(0,ssf+1):#Creates dictionary of grid of float coordinates.
+    # Lower bound of the axes
+    lo = 0
+    # Upper bound of the axes
+    hi = 1
+    # Increase this for higher resolution map. E.g 5 means 5x5 output map
+    ssf = 25
+    # Creates dictionary of grid of float coordinates.
+    for i in range(0,ssf+1):
         for j in range(0,ssf+1):
             unitSquareMap["x"].append((float(hi-lo)/ssf)*i+lo)
             unitSquareMap["y"].append((float(hi-lo)/ssf)*j+lo)
@@ -206,19 +203,22 @@ if __name__ == "__main__":
 
     inp = unitSquareMap
     inp = inp[:,:2]
-    outImg = np.empty((ssf+1,ssf+1)) #Empty square array
+    # Empty square array
+    outImg = np.empty((ssf+1,ssf+1))
 
     for i in range(0,(ssf+1)**2):
         row = inp[i]
         outImg[int(row[0]*ssf),int(row[1]*ssf)] = out2[i]
 
     outImg = outImg.T
-    # print(np.flip(outImg,axis=0))#This is prints in the same layout as the graph
+    # This is prints in the same layout as the graph
+    # print(np.flip(outImg,axis=0))
 
     img = plt.imshow(outImg,cmap="Greys",interpolation='none',extent = [lo,hi,hi,lo])
     plt.xlabel("v1")
     plt.ylabel("v2")
-    plt.gca().invert_yaxis()#Flip vertically, as the plot plots from the top by default
+    # Flip vertically, as the plot plots from the top by default
+    plt.gca().invert_yaxis()
     plt.savefig("./heatmaps/heatmaps_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
     plt.show()
     plt.close()
