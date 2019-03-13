@@ -1,7 +1,6 @@
 import torch
 from torch.autograd import Variable
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 import matplotlib.pyplot as plt
 import numpy as np
@@ -52,8 +51,10 @@ def generate_data(args,istest):
     # if(wanna_plot):
     #     plot_data(data,labels)
 
-    inputs = list(map(lambda s: Variable(torch.Tensor([s])), data))
-    targets = list(map(lambda s: Variable(torch.Tensor([s])), labels))
+    inputs = np.asarray(data)
+    targets = np.asarray(labels)
+    inputs = torch.from_numpy(inputs).float()
+    targets = torch.from_numpy(targets).float()
 
     return inputs,targets,data,labels
 
@@ -67,15 +68,6 @@ def addnoise(data, args):
     print("Using noise: ", noise_val)
     newdata = data + noise
     return newdata, args
-
-# From numpy to torch tensor
-def to_tensor(inputs,targets):
-    inputs = np.asarray(data)
-    targets = np.asarray(labels)
-    inputs = torch.from_numpy(inputs).float()
-    targets = torch.from_numpy(targets).float()
-
-    return inputs,targets
 
 # Plotting dataset
 def plot_data(data,labels):
@@ -174,7 +166,6 @@ def plot_heatmap(net, args):
     # plt.show()
     plt.close()
 
-
 if __name__ == "__main__":
 
     # Get settings from user
@@ -205,7 +196,6 @@ if __name__ == "__main__":
             for epoch in range(0, EPOCHS):
 
                 running_loss = 0.0
-                inputs,targets = to_tensor(inputs,targets)
 
                 # Batch gradient descent
                 optimizer.zero_grad()   # zero the gradient buffers
@@ -214,6 +204,9 @@ if __name__ == "__main__":
                 running_loss += loss.data
                 loss.backward()
                 optimizer.step()    # Does the update
+
+                if(epoch % 100 == 0):
+                    print("\nEpoch: ", epoch, " Loss: ", running_loss.item())
 
                 # Stochastic gradient descent (update on each training example)
                 # for input, target in zip(inputs, targets):
