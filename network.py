@@ -4,6 +4,7 @@ import torch.nn as nn
 import torch.nn.init as init
 import sys
 
+
 # Model
 class NeuralNet(nn.Module):
 

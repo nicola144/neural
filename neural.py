@@ -8,8 +8,9 @@ import sys
 import datetime
 import pandas as pd
 from progress.bar import Bar
-
+import time
 from network import NeuralNet
+from sklearn.metrics import roc_curve, auc, roc_auc_score
 
 # Hyperparameters
 EPOCHS = 5000
@@ -166,6 +167,30 @@ def plot_heatmap(net, args):
     # plt.show()
     plt.close()
 
+def plot_roc(data_test, net, args, Y_test):
+    data_test = torch.FloatTensor(data_test)
+
+    pred = net(data_test)
+    pred = pred.detach().numpy()
+    test = Y_test
+
+    fpr = dict()
+    tpr = dict()
+    roc_auc = dict()
+    for i in range(2):
+        fpr[i], tpr[i], _ = roc_curve(test, pred)
+        roc_auc[i] = auc(fpr[i], tpr[i])
+    print("ROC AUC score", roc_auc_score(test, pred))
+    plt.figure()
+    plt.plot(fpr[1], tpr[1])
+    plt.xlim([0.0, 1.0])
+    plt.ylim([0.0, 1.05])
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver operating characteristic')
+    plt.savefig("./roc_curves/roc_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
+    plt.close()
+
 if __name__ == "__main__":
 
     # Get settings from user
@@ -231,10 +256,14 @@ if __name__ == "__main__":
             Y_test = labels_test.flatten()
 
             # Accuracy as fraction of misclassified points
+            print("Evaluating model with ", args['n_inputs'], " inputs per types and ", args['n_neurons'], " hidden neurons")
             print_accuracy(data_test, Y_test)
+            time.sleep(3)
 
             # Plot the decision boundary
             plot_decision(data_test, net, args, Y_test)
+
+            plot_roc(data_test, net, args, Y_test)
 
             # Heatmap
             plot_heatmap(net, args)
