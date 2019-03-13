@@ -14,15 +14,16 @@ from network import NeuralNet
 
 # Hyperparameters
 EPOCHS = 5000
-learning_rate = 1e-1
+learning_rate = 0.5
 
 # Arguments
 def ask():
     args = dict()
     args['n_inputs'] = int(input("Number of inputs(per type): "))
     args['n_neurons'] = int(input("Number of hidden neurons: "))
-    isnoise = input("Want noise? Return for yes ")
-    args['noise'] = True if isnoise == '' else False
+    # isnoise = input("Want noise? Return for yes ")
+    # args['noise'] = True if isnoise == '' else False
+    args['noise'] = True ## NOTE:
     if(not (args['noise']) ):
         args['noise_val'] = 0.0
     return args
@@ -46,10 +47,10 @@ def generate_data(args,istest):
         print("Not using noise")
 
     # Ask if they want to plot dataset
-    wanna_plot = input("Wanna plot data? Return for yes ")
-    wanna_plot = True if wanna_plot == '' else False
-    if(wanna_plot):
-        plot_data(data,labels)
+    # wanna_plot = input("Wanna plot data? Return for yes ")
+    # wanna_plot = True if wanna_plot == '' else False
+    # if(wanna_plot):
+    #     plot_data(data,labels)
 
     inputs = list(map(lambda s: Variable(torch.Tensor([s])), data))
     targets = list(map(lambda s: Variable(torch.Tensor([s])), labels))
@@ -87,50 +88,7 @@ def plot_data(data,labels):
     plt.show()
     plt.close()
 
-if __name__ == "__main__":
-
-    # Get settings
-    args = ask()
-
-    # Model
-    net = NeuralNet(hidden_neurons=args['n_neurons'])
-
-    # Train data
-    inputs,targets,data,labels = generate_data(args,istest=False)
-
-    criterion = nn.MSELoss(reduction="mean")
-    optimizer = optim.SGD(net.parameters(), lr=learning_rate)
-    hold_loss=[]
-
-    prog_bar = Bar('Training...', suffix='%(percent).1f%% - %(eta)ds - %(index)d / %(max)d', max=EPOCHS )
-
-    # Train loop
-    for epoch in range(0, EPOCHS):
-
-        running_loss = 0.0
-        inputs,targets = to_tensor(inputs,targets)
-
-        # Batch gradient descent
-        optimizer.zero_grad()   # zero the gradient buffers
-        output = net(inputs)
-        loss = criterion(output, targets)
-        running_loss += loss.data
-        loss.backward()
-        optimizer.step()    # Does the update
-
-        # Stochastic gradient descent (update on each training example)
-        # for input, target in zip(inputs, targets):
-        #     optimizer.zero_grad()   # zero the gradient buffers
-        #     output = net(input)
-        #     loss = criterion(output, target)
-        #     running_loss += loss.data
-        #     loss.backward()
-        #     optimizer.step()    # Does the update
-
-        hold_loss.append(running_loss)
-        prog_bar.next()
-
-    # Results
+def print_results(hold_loss, args):
     print("\nFinal results:")
     plt.plot(np.array(hold_loss))
     plt.xlabel('Epochs')
@@ -138,20 +96,13 @@ if __name__ == "__main__":
     plt.savefig("./train_loss/train_loss_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+").png")
     plt.close()
 
-    # Plotting decision boundary on test data
-
-    # Get test
-    _,_,data_test,labels_test = generate_data(args,istest=True)
-
-    data_test = torch.FloatTensor(data_test)
-    labels_test = np.asarray(labels_test)
-    Y_test = labels_test.flatten()
+def print_accuracy(data_test, Y_test):
     y_hat_test = net(data_test)
     y_hat_test_class = np.where(y_hat_test.detach().numpy()<0.5, 0, 1)
     test_accuracy = np.sum(Y_test.reshape(-1,1)==y_hat_test_class) / len(Y_test)
     print("Accuracy {:.2f}".format(test_accuracy))
 
-    # Plot the decision boundary
+def plot_decision(data_test, net, args, Y_test):
     # Determine grid range in x and y directions
     x_min, x_max = data_test[:, 0].min()-0.1, data_test[:, 0].max()+0.1
     y_min, y_max = data_test[:, 1].min()-0.1, data_test[:, 1].max()+0.1
@@ -177,11 +128,10 @@ if __name__ == "__main__":
     plt.contourf(XX, YY, Z, cmap=plt.cm.Accent, alpha=0.5)
     plt.scatter(data_test[:,0], data_test[:,1], c=Y_test, cmap=plt.cm.Accent)
     plt.savefig("./boundaries/decision_boundary_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
-    plt.show()
+    # plt.show()
     plt.close()
 
-    # Heatmap
-    # Adapted from Jacob Taylor 1615260
+def plot_heatmap(net, args):
     unitSquareMap = {"x":[],"y":[]}
     # Lower bound of the axes
     lo = 0
@@ -203,6 +153,7 @@ if __name__ == "__main__":
 
     inp = unitSquareMap
     inp = inp[:,:2]
+
     # Empty square array
     outImg = np.empty((ssf+1,ssf+1))
 
@@ -215,13 +166,86 @@ if __name__ == "__main__":
     # print(np.flip(outImg,axis=0))
 
     img = plt.imshow(outImg,cmap="Greys",interpolation='none',extent = [lo,hi,hi,lo])
-    plt.xlabel("v1")
-    plt.ylabel("v2")
+    plt.xlabel("V1")
+    plt.ylabel("V2")
     # Flip vertically, as the plot plots from the top by default
     plt.gca().invert_yaxis()
     plt.savefig("./heatmaps/heatmaps_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
-    plt.show()
+    # plt.show()
     plt.close()
+
+
+if __name__ == "__main__":
+
+    # Get settings from user
+    # args = ask()
+
+    for n_neurons in [2,4,8]:
+        for n_inputs in [4,8,16]:
+
+            args = dict()
+            args['n_inputs'] = n_inputs
+            args['n_neurons'] = n_neurons
+            args['noise'] = True
+            args['noise_val'] = 0.25
+
+            # Model
+            net = NeuralNet(hidden_neurons=args['n_neurons'])
+
+            # Train data
+            inputs,targets,data,labels = generate_data(args,istest=False)
+
+            criterion = nn.MSELoss(reduction="mean")
+            optimizer = optim.SGD(net.parameters(), lr=learning_rate)
+            hold_loss=[]
+
+            prog_bar = Bar('Training...', suffix='%(percent).1f%% - %(eta)ds - %(index)d / %(max)d', max=EPOCHS )
+
+            # Train loop
+            for epoch in range(0, EPOCHS):
+
+                running_loss = 0.0
+                inputs,targets = to_tensor(inputs,targets)
+
+                # Batch gradient descent
+                optimizer.zero_grad()   # zero the gradient buffers
+                output = net(inputs)
+                loss = criterion(output, targets)
+                running_loss += loss.data
+                loss.backward()
+                optimizer.step()    # Does the update
+
+                # Stochastic gradient descent (update on each training example)
+                # for input, target in zip(inputs, targets):
+                #     optimizer.zero_grad()   # zero the gradient buffers
+                #     output = net(input)
+                #     loss = criterion(output, target)
+                #     running_loss += loss.data
+                #     loss.backward()
+                #     optimizer.step()    # Does the update
+
+                hold_loss.append(running_loss)
+                prog_bar.next()
+
+            # Results
+            print_results(hold_loss, args)
+
+            # Get test
+            _,_,data_test,labels_test = generate_data(args,istest=True)
+
+            data_test = torch.FloatTensor(data_test)
+            labels_test = np.asarray(labels_test)
+            Y_test = labels_test.flatten()
+
+            # Accuracy as fraction of misclassified points
+            print_accuracy(data_test, Y_test)
+
+            # Plot the decision boundary
+            plot_decision(data_test, net, args, Y_test)
+
+            # Heatmap
+            plot_heatmap(net, args)
+
 
 
 # Notes
@@ -235,3 +259,5 @@ if __name__ == "__main__":
 
 # 5000 , sgd with 1e-2 16 inputs and 2 hideen neurons does not learn well ie acc 0.62 on test set. 10000 is even worse. Different run gets .73
 # Surprisingly learns with 1e5 epochs .95
+
+# unstable with 2 inps 2 neurons .5 lr 5000 epochs, sometimes learns, sometimes does not
