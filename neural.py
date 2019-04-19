@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import sys
 import datetime
+import math
 import pandas as pd
 from progress.bar import Bar
 import time
@@ -13,7 +14,8 @@ from network import NeuralNet
 from sklearn.metrics import roc_curve, auc, roc_auc_score
 
 # Hyperparameters
-EPOCHS = 5000
+# 5000 epochs work
+K = 100000
 learning_rate = 0.5
 
 # Arguments
@@ -83,17 +85,25 @@ def plot_data(data,labels):
 
 def print_results(hold_loss, args):
     print("\nFinal results:")
+    print("Final MSE error: ", hold_loss[-1])
     plt.plot(np.array(hold_loss))
     plt.xlabel('Epochs')
     plt.ylabel('MSE Loss')
     plt.savefig("./train_loss/train_loss_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+").png")
     plt.close()
 
-def print_accuracy(data_test, Y_test):
+    with open("results.txt", "a") as f:
+        towrite = "\n----------------------------------\n Evaluating network "+ str(args['n_inputs'])+ " "+ str(args['n_neurons'])+ " \t with K and lr "+ str(K) + str(learning_rate)  +"\n train MSE "+ str(hold_loss[-1]) + "\n"
+        f.write(towrite)
+
+def print_accuracy(data_test, Y_test, args):
     y_hat_test = net(data_test)
     y_hat_test_class = np.where(y_hat_test.detach().numpy()<0.5, 0, 1)
     test_accuracy = np.sum(Y_test.reshape(-1,1)==y_hat_test_class) / len(Y_test)
-    print("Accuracy {:.2f}".format(test_accuracy))
+    print("Test Accuracy {:.2f}".format(test_accuracy))
+    with open("results.txt", "a") as f:
+        towrite = "Test accuracy: "+ str(test_accuracy) + "\n END \n ---------------------------------------"
+        f.write(towrite)
 
 def plot_decision(data_test, net, args, Y_test):
     # Determine grid range in x and y directions
@@ -124,6 +134,7 @@ def plot_decision(data_test, net, args, Y_test):
     # plt.show()
     plt.close()
 
+# Heatmap adapted from Jacob Taylor
 def plot_heatmap(net, args):
     unitSquareMap = {"x":[],"y":[]}
     # Lower bound of the axes
@@ -131,7 +142,7 @@ def plot_heatmap(net, args):
     # Upper bound of the axes
     hi = 1
     # Increase this for higher resolution map. E.g 5 means 5x5 output map
-    ssf = 25
+    ssf = 1000
     # Creates dictionary of grid of float coordinates.
     for i in range(0,ssf+1):
         for j in range(0,ssf+1):
@@ -196,6 +207,7 @@ if __name__ == "__main__":
     # Get settings from user
     # args = ask()
 
+    # This is training for all the required settings in the coursework specification
     for n_neurons in [2,4,8]:
         for n_inputs in [4,8,16]:
 
@@ -215,21 +227,21 @@ if __name__ == "__main__":
             optimizer = optim.SGD(net.parameters(), lr=learning_rate)
             hold_loss=[]
 
+            EPOCHS = math.ceil(K /(n_neurons * 4))
             prog_bar = Bar('Training...', suffix='%(percent).1f%% - %(eta)ds - %(index)d / %(max)d', max=EPOCHS )
-
             # Train loop
             for epoch in range(0, EPOCHS):
-
                 running_loss = 0.0
 
                 # Batch gradient descent
-                optimizer.zero_grad()   # zero the gradient buffers
+                optimizer.zero_grad()
                 output = net(inputs)
                 loss = criterion(output, targets)
                 running_loss += loss.data
                 loss.backward()
-                optimizer.step()    # Does the update
+                optimizer.step()
 
+                # Printing current loss each 100 epochs
                 if(epoch % 100 == 0):
                     print("\nEpoch: ", epoch, " Loss: ", running_loss.item())
 
@@ -248,7 +260,7 @@ if __name__ == "__main__":
             # Results
             print_results(hold_loss, args)
 
-            # Get test
+            # Get test data. Has to be 64 inputs (ie 16 per type) generated with a different noise from trainining set of course
             _,_,data_test,labels_test = generate_data(args,istest=True)
 
             data_test = torch.FloatTensor(data_test)
@@ -256,16 +268,17 @@ if __name__ == "__main__":
             Y_test = labels_test.flatten()
 
             # Accuracy as fraction of misclassified points
-            print("Evaluating model with ", args['n_inputs'], " inputs per types and ", args['n_neurons'], " hidden neurons")
-            print_accuracy(data_test, Y_test)
+            print("Evaluating model with", args['n_inputs'], " inputs per types and ", args['n_neurons'], "hidden neurons")
+            print_accuracy(data_test, Y_test, args)
             time.sleep(3)
 
             # Plot the decision boundary
             plot_decision(data_test, net, args, Y_test)
 
+            # Plot receiver operating characteristic curve
             plot_roc(data_test, net, args, Y_test)
 
-            # Heatmap
+            # Plot heatmap
             plot_heatmap(net, args)
 
 
@@ -283,3 +296,10 @@ if __name__ == "__main__":
 # Surprisingly learns with 1e5 epochs .95
 
 # unstable with 2 inps 2 neurons .5 lr 5000 epochs, sometimes learns, sometimes does not
+
+
+
+# K = 20000
+# ie , n epochs = 1250, 625, 313
+# K = 100000
+# ie , n epochs = 3125,

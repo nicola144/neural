@@ -1,0 +1,37 @@
+
+----------------------------------
+ Evaluating network 4 2 	 with K and lr 1000000.5
+ train MSE tensor(0.1004)
+Test accuracy: 0.671875
+----------------------------------
+ Evaluating network 8 2 	 with K and lr 1000000.5
+ train MSE tensor(0.1370)
+Test accuracy: 0.46875
+----------------------------------
+ Evaluating network 16 2 	 with K and lr 1000000.5
+ train MSE tensor(0.1219)
+Test accuracy: 0.6875
+----------------------------------
+ Evaluating network 4 4 	 with K and lr 1000000.5
+ train MSE tensor(0.1394)
+Test accuracy: 0.5625
+----------------------------------
+ Evaluating network 8 4 	 with K and lr 1000000.5
+ train MSE tensor(0.0319)
+Test accuracy: 0.828125
+----------------------------------
+ Evaluating network 16 4 	 with K and lr 1000000.5
+ train MSE tensor(0.0763)
+Test accuracy: 0.703125
+----------------------------------
+ Evaluating network 4 8 	 with K and lr 1000000.5
+ train MSE tensor(0.0036)
+Test accuracy: 0.84375
+----------------------------------
+ Evaluating network 8 8 	 with K and lr 1000000.5
+ train MSE tensor(0.0047)
+Test accuracy: 0.84375
+----------------------------------
+ Evaluating network 16 8 	 with K and lr 1000000.5
+ train MSE tensor(0.0215)
+Test accuracy: 0.9375
