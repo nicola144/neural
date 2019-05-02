@@ -8,15 +8,15 @@ import sys
 import datetime
 import math
 import pandas as pd
-from progress.bar import Bar
+# from progress.bar import Bar
 import time
 from network import NeuralNet
 from sklearn.metrics import roc_curve, auc, roc_auc_score
 
 # Hyperparameters
 # 5000 epochs work
-K = 100000
-learning_rate = 0.5
+K = 5e6
+learning_rate = 0.1
 
 # Arguments
 def ask():
@@ -31,6 +31,34 @@ def ask():
     return args
 
 # Generate an XOR dataset. Each input gets a fair representation
+def new_generate_data(istest):
+
+    n = 16
+
+    # Generate data
+    noiseless_data = [[0,0]] * n + [[0,1]] * n + [[1,0]] * n + [[1,1]] * n
+
+    # Generate labels
+    labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
+
+    data = addnoise(noiseless_data)
+
+
+    # Ask if they want to plot dataset
+    wanna_plot = input("Wanna plot data? Return for yes ")
+    wanna_plot = True if wanna_plot == '' else False
+    if(wanna_plot):
+        plot_data(data,labels,istest)
+
+
+    inputs = np.asarray(data)
+    targets = np.asarray(labels)
+    inputs = torch.from_numpy(inputs).float()
+    targets = torch.from_numpy(targets).float()
+
+    return inputs,targets,data,labels
+
+# Generate an XOR dataset. Each input gets a fair representation
 def generate_data(args,istest):
 
     # Number of inputs (for each type)
@@ -43,12 +71,12 @@ def generate_data(args,istest):
     labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
 
     # add noise
-    if(args['noise']):
-        data,args = addnoise(data,args)
-    else:
-        print("Not using noise")
+    # if(args['noise']):
+    #     data,args = addnoise(data,args)
+    # else:
+    #     print("Not using noise")
 
-    # Ask if they want to plot dataset
+    # # Ask if they want to plot dataset
     # wanna_plot = input("Wanna plot data? Return for yes ")
     # wanna_plot = True if wanna_plot == '' else False
     # if(wanna_plot):
@@ -62,25 +90,26 @@ def generate_data(args,istest):
     return inputs,targets,data,labels
 
 # Adding noise
-def addnoise(data, args):
+def addnoise(data):
     data = np.asarray(data)
-    noise_val = 0.25
+    noise_val = 0.5
     # Gaussian noise with 0 mean
     noise = np.random.normal(0, noise_val, data.shape)
-    args['noise_val'] = noise_val
-    print("Using noise: ", noise_val)
     newdata = data + noise
-    return newdata, args
+    return newdata
 
 # Plotting dataset
-def plot_data(data,labels):
+def plot_data(data,labels,istest):
     data = np.asarray(data)
     labels = np.asarray(labels)
     labels = labels.flatten()
 
     plt.figure(figsize=(12,8))
     plt.scatter(data[:,0], data[:,1], c=labels)
-    plt.show()
+    if(istest):
+        plt.savefig("./train.png")
+    else:
+        plt.savefig("./test.png")
     plt.close()
 
 def print_results(hold_loss, args):
@@ -89,11 +118,11 @@ def print_results(hold_loss, args):
     plt.plot(np.array(hold_loss))
     plt.xlabel('Epochs')
     plt.ylabel('MSE Loss')
-    plt.savefig("./train_loss/train_loss_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+").png")
+    plt.savefig("./train_loss/train_loss_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+").png")
     plt.close()
 
     with open("results.txt", "a") as f:
-        towrite = "\n----------------------------------\n Evaluating network "+ str(args['n_inputs'])+ " "+ str(args['n_neurons'])+ " \t with K and lr "+ str(K) + str(learning_rate)  +"\n train MSE "+ str(hold_loss[-1]) + "\n"
+        towrite = "\n----------------------------------\n Evaluating network with "+ str(args['n_inputs'])+ " inputs (of each type) and "+ str(args['n_neurons'])+ " hidden neurons, \t with K and lr = "+ str(K) + ",  " + str(learning_rate)  +"\n train MSE "+ str(hold_loss[-1]) + "\n"
         f.write(towrite)
 
 def print_accuracy(data_test, Y_test, args):
@@ -102,7 +131,7 @@ def print_accuracy(data_test, Y_test, args):
     test_accuracy = np.sum(Y_test.reshape(-1,1)==y_hat_test_class) / len(Y_test)
     print("Test Accuracy {:.2f}".format(test_accuracy))
     with open("results.txt", "a") as f:
-        towrite = "Test accuracy: "+ str(test_accuracy) + "\n END \n ---------------------------------------"
+        towrite = "Test accuracy: "+ str(test_accuracy) + "\n ---------------------------------------"
         f.write(towrite)
 
 def plot_decision(data_test, net, args, Y_test):
@@ -130,7 +159,7 @@ def plot_decision(data_test, net, args, Y_test):
     plt.figure(figsize=(12,8))
     plt.contourf(XX, YY, Z, cmap=plt.cm.Accent, alpha=0.5)
     plt.scatter(data_test[:,0], data_test[:,1], c=Y_test, cmap=plt.cm.Accent)
-    plt.savefig("./boundaries/decision_boundary_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
+    plt.savefig("./boundaries/decision_boundary_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
     # plt.show()
     plt.close()
 
@@ -174,7 +203,7 @@ def plot_heatmap(net, args):
     plt.ylabel("V2")
     # Flip vertically, as the plot plots from the top by default
     plt.gca().invert_yaxis()
-    plt.savefig("./heatmaps/heatmaps_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
+    plt.savefig("./heatmaps/heatmaps_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
     # plt.show()
     plt.close()
 
@@ -199,36 +228,78 @@ def plot_roc(data_test, net, args, Y_test):
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
     plt.title('Receiver operating characteristic')
-    plt.savefig("./roc_curves/roc_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+','+str(args['noise_val'])+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
+    plt.savefig("./roc_curves/roc_at_"+str(datetime.datetime.now())+"_model_("+str(args['n_inputs'])+','+str(args['n_neurons'])+', '+ ', lr='+str(learning_rate)+ ', epochs=' + str(EPOCHS) + ").png")
     plt.close()
+
+def print_test_mse(data_test, labels_test, net):
+    preds = net(data_test)
+    loss = criterion(preds, labels_test)
+    with open("results.txt", "a") as f:
+        towrite = "Test MSE : "+ str(loss) + "\n ---------------------------------------"
+        f.write(towrite)
+
 
 if __name__ == "__main__":
 
-    # Get settings from user
-    # args = ask()
+    with open("results.txt", "a") as f:
+        towrite = "\n ---------------------------------------- BEGIN TEST ---------------------------------------\n"
+        f.write(towrite)
+
+    # Train data
+    inputs,targets,data,labels = new_generate_data(istest=False)
+
+    # Get test data. Has to be 64 inputs (ie 16 per type) generated with a different noise from trainining set of course
+    inputs_test,targets_test,data_test,labels_test = new_generate_data(istest=True)
+
+    # (0,0)s : type 1
+    type1 = inputs[0:16]
+    type1_targets = targets[0:16]
+
+    # (0,1): type 2
+    type2 = inputs[16:32]
+    type2_targets = targets[16:32]
+
+    # (1,0) type 3
+    type3 = inputs[32:48]
+    type3_targets = targets[32:48]
+
+    # (1,1) type 4
+    type4 = inputs[48:64]
+    type4_targets = targets[48:64]
 
     # This is training for all the required settings in the coursework specification
     for n_neurons in [2,4,8]:
         for n_inputs in [4,8,16]:
 
+            from_type1 = type1[0:n_inputs]
+            from_type1_targets = type1_targets[0:n_inputs]
+
+            from_type2 = type2[0:n_inputs]
+            from_type2_targets = type2_targets[0:n_inputs]
+
+            from_type3 = type3[0:n_inputs]
+            from_type3_targets = type3_targets[0:n_inputs]
+
+            from_type4 = type4[0:n_inputs]
+            from_type4_targets = type4_targets[0:n_inputs]
+
+            inputs = torch.cat((from_type1, from_type2, from_type3, from_type4), 0 )
+
+            targets = torch.cat( (from_type1_targets,from_type2_targets,from_type3_targets,from_type4_targets)  ,0)
+
             args = dict()
             args['n_inputs'] = n_inputs
             args['n_neurons'] = n_neurons
-            args['noise'] = True
-            args['noise_val'] = 0.25
 
             # Model
             net = NeuralNet(hidden_neurons=args['n_neurons'])
-
-            # Train data
-            inputs,targets,data,labels = generate_data(args,istest=False)
 
             criterion = nn.MSELoss(reduction="mean")
             optimizer = optim.SGD(net.parameters(), lr=learning_rate)
             hold_loss=[]
 
-            EPOCHS = math.ceil(K /(n_neurons * 4))
-            prog_bar = Bar('Training...', suffix='%(percent).1f%% - %(eta)ds - %(index)d / %(max)d', max=EPOCHS )
+            EPOCHS = math.ceil(K /(n_inputs * 4))
+            # prog_bar = Bar('Training...', suffix='%(percent).1f%% - %(eta)ds - %(index)d / %(max)d', max=EPOCHS )
             # Train loop
             for epoch in range(0, EPOCHS):
                 running_loss = 0.0
@@ -255,13 +326,12 @@ if __name__ == "__main__":
                 #     optimizer.step()    # Does the update
 
                 hold_loss.append(running_loss)
-                prog_bar.next()
+                # prog_bar.next()
 
             # Results
             print_results(hold_loss, args)
 
-            # Get test data. Has to be 64 inputs (ie 16 per type) generated with a different noise from trainining set of course
-            _,_,data_test,labels_test = generate_data(args,istest=True)
+            print_test_mse(inputs_test, targets_test,net)
 
             data_test = torch.FloatTensor(data_test)
             labels_test = np.asarray(labels_test)
@@ -281,7 +351,9 @@ if __name__ == "__main__":
             # Plot heatmap
             plot_heatmap(net, args)
 
-
+    with open("results.txt", "a") as f:
+        towrite = "\n ---------------------------------------- END OF TEST ---------------------------------------\n"
+        f.write(towrite)
 
 # Notes
 # need to use inputs 4, 8, 16.  neurons 2,4,8
@@ -290,14 +362,10 @@ if __name__ == "__main__":
 # SGD learning rate 1e-4 was too low. Works with 1e-2
 # 1 is black
 
-
-
 # 5000 , sgd with 1e-2 16 inputs and 2 hideen neurons does not learn well ie acc 0.62 on test set. 10000 is even worse. Different run gets .73
 # Surprisingly learns with 1e5 epochs .95
 
 # unstable with 2 inps 2 neurons .5 lr 5000 epochs, sometimes learns, sometimes does not
-
-
 
 # K = 20000
 # ie , n epochs = 1250, 625, 313
