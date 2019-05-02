@@ -58,37 +58,6 @@ def new_generate_data(istest):
 
     return inputs,targets,data,labels
 
-# Generate an XOR dataset. Each input gets a fair representation
-def generate_data(args,istest):
-
-    # Number of inputs (for each type)
-    n = 16 if istest else args['n_inputs']
-
-    # Generate data
-    data = [[0,0]] * n + [[0,1]] * n + [[1,0]] * n + [[1,1]] * n
-
-    # Generate labels
-    labels = [[0]] * n + [[1]] * n + [[1]] * n + [[0]] * n
-
-    # add noise
-    # if(args['noise']):
-    #     data,args = addnoise(data,args)
-    # else:
-    #     print("Not using noise")
-
-    # # Ask if they want to plot dataset
-    # wanna_plot = input("Wanna plot data? Return for yes ")
-    # wanna_plot = True if wanna_plot == '' else False
-    # if(wanna_plot):
-    #     plot_data(data,labels)
-
-    inputs = np.asarray(data)
-    targets = np.asarray(labels)
-    inputs = torch.from_numpy(inputs).float()
-    targets = torch.from_numpy(targets).float()
-
-    return inputs,targets,data,labels
-
 # Adding noise
 def addnoise(data):
     data = np.asarray(data)
