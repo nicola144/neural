@@ -45,10 +45,10 @@ def new_generate_data(istest):
 
 
     # Ask if they want to plot dataset
-    wanna_plot = input("Wanna plot data? Return for yes ")
-    wanna_plot = True if wanna_plot == '' else False
-    if(wanna_plot):
-        plot_data(data,labels,istest)
+    # wanna_plot = input("Wanna plot data? Return for yes ")
+    # wanna_plot = True if wanna_plot == '' else False
+    # if(wanna_plot):
+    #     plot_data(data,labels,istest)
 
 
     inputs = np.asarray(data)
